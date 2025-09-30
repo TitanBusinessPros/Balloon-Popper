@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balloon Math Shooter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(to bottom, #87CEEB, #1E90FF);
+            color: #333;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #FF4500;
+            text-shadow: 2px 2px 0 #FFD700;
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+        }
+        
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 20px;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .score-container, .balloons-left, .shots-fired, .high-score {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #FF4500;
+        }
+        
+        .game-area {
+            display: flex;
+            width: 100%;
+            gap: 20px;
+        }
+        
+        .canvas-container {
+            flex: 3;
+            position: relative;
+            border: 5px solid #8B4513;
+            border-radius: 10px;
+            overflow: hidden;
+            background: linear-gradient(to bottom, #87CEEB, #98FB98);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+        }
+        
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: 500px;
+        }
+        
+        .crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 30px;
+            height: 30px;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .crosshair::before, .crosshair::after {
+            content: '';
+            position: absolute;
+            background-color: rgba(255, 0, 0, 0.8);
+        }
+        
+        .crosshair::before {
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            transform: translateY(-50%);
+        }
+        
+        .crosshair::after {
+            left: 50%;
+            top: 0;
+            height: 100%;
+            width: 2px;
+            transform: translateX(-50%);
+        }
+        
+        .math-container {
+            flex: 1;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .math-title {
+            color: #FF4500;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 1.5rem;
+        }
+        
+        .question-container {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            text-align: center;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+        
+        .answer-input {
+            width: 100%;
+            padding: 12px;
+            font-size: 1.5rem;
+            text-align: center;
+            border: 2px solid #FF4500;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .submit-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1.2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        
+        .submit-btn:hover {
+            background-color: #45a049;
+        }
+        
+        .submit-btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .new-game-btn {
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1.2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            width: 100%;
+        }
+        
+        .new-game-btn:hover {
+            background-color: #0b7dda;
+        }
+        
+        .feedback {
+            margin-top: 15px;
+            font-size: 1.2rem;
+            min-height: 30px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .correct {
+            color: #4CAF50;
+        }
+        
+        .incorrect {
+            color: #FF4500;
+        }
+        
+        .instructions {
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 15px;
+            border-radius: 15px;
+            margin-top: 20px;
+            width: 100%;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .instructions h2 {
+            color: #FF4500;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .instructions ul {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+        }
+        
+        .game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            z-index: 100;
+            display: none;
+        }
+        
+        .game-over h2 {
+            font-size: 3rem;
+            color: #FFD700;
+            margin-bottom: 20px;
+        }
+        
+        .final-score {
+            font-size: 2rem;
+            margin-bottom: 30px;
+        }
+        
+        .restart-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .restart-btn:hover {
+            background-color: #45a049;
+        }
+        
+        @media (max-width: 768px) {
+            .game-area {
+                flex-direction: column;
+            }
+            
+            .math-container {
+                order: -1;
+                margin-bottom: 20px;
+            }
+            
+            #gameCanvas {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <header>
+            <h1>Knuckleball Balloon Popper</h1>
+        </header>
+        
+        <div class="game-info">
+            <div class="score-container">Score: <span id="score">0</span></div>
+            <div class="balloons-left">Balloons Left: <span id="balloonsLeft">20</span></div>
+            <div class="shots-fired">Total Count: <span id="shotsFired">0</span></div>
+            <div class="high-score">High Score: <span id="highScore">0</span></div>
+        </div>
+        
+        <div class="game-area">
+            <div class="canvas-container">
+                <canvas id="gameCanvas"></canvas>
+                <div class="crosshair"></div>
+            </div>
+            
+            <div class="math-container">
+                <h2 class="math-title">Solve to Pop!</h2>
+                <div class="question-container" id="question">3 × 7 = ?</div>
+                <input type="number" class="answer-input" id="answer" placeholder="Enter your answer">
+                <button class="submit-btn" id="submit">Pop It</button>
+                <button class="new-game-btn" id="newGame">New Game</button>
+                <div class="feedback" id="feedback"></div>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h2>How to Play</h2>
+            <ul>
+                <li>Solve the math problem correctly to earn a shot</li>
+                <li>Aim with your mouse and click to shoot</li>
+                <li>Bullets travel like knuckleballs (unpredictable path)</li>
+                <li>Each balloon hit gives you 20 points</li>
+                <li>Game ends when all 20 balloons are popped!</li>
+                <li>Your progress is automatically saved between sessions</li>
+            </ul>
+        </div>
+        
+        <div class="game-over" id="gameOver">
+            <h2>Game Over!</h2>
+            <div class="final-score">Your Score: <span id="finalScore">0</span></div>
+            <button class="restart-btn" id="restart">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        // Game variables
+        let score = 0;
+        let balloonsLeft = 20;
+        let shotsFired = 0;
+        let bullets = [];
+        let balloons = [];
+        let canShoot = false;
+        let gameActive = true;
+        let currentProblem = null;
+        let highScore = 0;
+        
+        // Canvas setup
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+        
+        // DOM elements
+        const scoreElement = document.getElementById('score');
+        const balloonsLeftElement = document.getElementById('balloonsLeft');
+        const shotsFiredElement = document.getElementById('shotsFired');
+        const highScoreElement = document.getElementById('highScore');
+        const questionElement = document.getElementById('question');
+        const answerInput = document.getElementById('answer');
+        const submitButton = document.getElementById('submit');
+        const feedbackElement = document.getElementById('feedback');
+        const gameOverElement = document.getElementById('gameOver');
+        const finalScoreElement = document.getElementById('finalScore');
+        const restartButton = document.getElementById('restart');
+        const newGameButton = document.getElementById('newGame');
+        
+        // 4th grade math problems
+        const mathProblems = [
+            // Multiplication
+            { question: "7 × 8 = ?", answer: 56 },
+            { question: "9 × 6 = ?", answer: 54 },
+            { question: "12 × 4 = ?", answer: 48 },
+            { question: "11 × 5 = ?", answer: 55 },
+            { question: "8 × 9 = ?", answer: 72 },
+            
+            // Division
+            { question: "63 ÷ 7 = ?", answer: 9 },
+            { question: "48 ÷ 6 = ?", answer: 8 },
+            { question: "81 ÷ 9 = ?", answer: 9 },
+            { question: "56 ÷ 8 = ?", answer: 7 },
+            { question: "36 ÷ 4 = ?", answer: 9 },
+            
+            // Addition with larger numbers
+            { question: "245 + 178 = ?", answer: 423 },
+            { question: "367 + 429 = ?", answer: 796 },
+            { question: "512 + 389 = ?", answer: 901 },
+            { question: "674 + 238 = ?", answer: 912 },
+            { question: "821 + 156 = ?", answer: 977 },
+            
+            // Subtraction with larger numbers
+            { question: "542 - 278 = ?", answer: 264 },
+            { question: "815 - 367 = ?", answer: 448 },
+            { question: "703 - 429 = ?", answer: 274 },
+            { question: "921 - 648 = ?", answer: 273 },
+            { question: "756 - 389 = ?", answer: 367 },
+            
+            // Fractions
+            { question: "1/2 + 1/4 = ? (as decimal)", answer: 0.75 },
+            { question: "3/4 - 1/2 = ? (as decimal)", answer: 0.25 },
+            { question: "2/3 of 18 = ?", answer: 12 },
+            { question: "5/6 of 24 = ?", answer: 20 },
+            { question: "1/3 + 1/6 = ? (as decimal)", answer: 0.5 },
+            
+            // Word problems
+            { question: "If a box has 24 cookies and 8 friends share them equally, how many cookies does each get?", answer: 3 },
+            { question: "A garden has 7 rows of flowers with 9 flowers in each row. How many flowers total?", answer: 63 },
+            { question: "If you have $50 and spend $28, how much money is left?", answer: 22 },
+            { question: "A bus has 45 seats. If 32 are occupied, how many are empty?", answer: 13 },
+            { question: "If a pizza is cut into 8 slices and you eat 3, how many slices are left?", answer: 5 }
+        ];
+        
+        // Balloon class
+        class Balloon {
+            constructor(x, y, radius, color, speedX, speedY, popped) {
+                this.radius = radius || 30 + Math.random() * 20;
+                this.x = x || Math.random() * (canvas.width - this.radius * 2) + this.radius;
+                this.y = y || canvas.height + this.radius;
+                this.speedX = speedX || (Math.random() - 0.5) * 2;
+                this.speedY = speedY || - (1 + Math.random() * 2);
+                this.color = color || this.getRandomColor();
+                this.stringLength = 50 + Math.random() * 70;
+                this.popped = popped || false;
+            }
+            
+            getRandomColor() {
+                const colors = [
+                    '#FF5252', '#FF4081', '#E040FB', '#7C4DFF', 
+                    '#536DFE', '#448AFF', '#40C4FF', '#18FFFF',
+                    '#64FFDA', '#69F0AE', '#B2FF59', '#EEFF41',
+                    '#FFFF00', '#FFD740', '#FFAB40', '#FF6E40'
+                ];
+                return colors[Math.floor(Math.random() * colors.length)];
+            }
+            
+            update() {
+                if (this.popped) return;
+                
+                this.x += this.speedX;
+                this.y += this.speedY;
+                
+                // Bounce off walls
+                if (this.x < this.radius || this.x > canvas.width - this.radius) {
+                    this.speedX *= -1;
+                }
+                
+                // If balloon goes too high, reset it
+                if (this.y < -this.radius) {
+                    this.y = canvas.height + this.radius;
+                    this.x = Math.random() * (canvas.width - this.radius * 2) + this.radius;
+                }
+            }
+            
+            draw() {
+                if (this.popped) return;
+                
+                // Draw balloon string
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y + this.radius);
+                ctx.lineTo(this.x, this.y + this.radius + this.stringLength);
+                ctx.strokeStyle = '#8B4513';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Draw balloon
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Draw balloon highlight
+                ctx.beginPath();
+                ctx.arc(this.x - this.radius * 0.3, this.y - this.radius * 0.3, this.radius * 0.2, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                ctx.fill();
+            }
+            
+            isHit(x, y) {
+                if (this.popped) return false;
+                
+                const distance = Math.sqrt((x - this.x) ** 2 + (y - this.y) ** 2);
+                return distance <= this.radius;
+            }
+            
+            pop() {
+                this.popped = true;
+                balloonsLeft--;
+                balloonsLeftElement.textContent = balloonsLeft;
+                score += 20;
+                scoreElement.textContent = score;
+                
+                if (score > highScore) {
+                    highScore = score;
+                    highScoreElement.textContent = highScore;
+                    saveGame();
+                }
+                
+                if (balloonsLeft === 0) {
+                    endGame();
+                }
+                
+                saveGame();
+            }
+        }
+        
+        // Bullet class
+        class Bullet {
+            constructor(x, y, targetX, targetY, angle, knuckleEffect) {
+                this.x = x;
+                this.y = y;
+                this.radius = 5;
+                this.speed = 10;
+                this.angle = angle || Math.atan2(targetY - y, targetX - x);
+                this.knuckleEffect = knuckleEffect || 0;
+                this.knuckleChange = 0.1;
+                this.active = true;
+            }
+            
+            update() {
+                // Knuckleball effect - random wobble
+                this.knuckleEffect += this.knuckleChange;
+                this.angle += Math.sin(this.knuckleEffect) * 0.05;
+                
+                this.x += Math.cos(this.angle) * this.speed;
+                this.y += Math.sin(this.angle) * this.speed;
+                
+                // Check if bullet is out of bounds
+                if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) {
+                    this.active = false;
+                }
+                
+                // Check for collisions with balloons
+                for (let balloon of balloons) {
+                    if (balloon.isHit(this.x, this.y)) {
+                        balloon.pop();
+                        this.active = false;
+                        break;
+                    }
+                }
+            }
+            
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#333';
+                ctx.fill();
+                
+                // Draw bullet trail
+                ctx.beginPath();
+                ctx.moveTo(this.x - Math.cos(this.angle) * 10, this.y - Math.sin(this.angle) * 10);
+                ctx.lineTo(this.x, this.y);
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+        
+        // Save game to localStorage
+        function saveGame() {
+            const gameState = {
+                score: score,
+                balloonsLeft: balloonsLeft,
+                shotsFired: shotsFired,
+                highScore: highScore,
+                balloons: balloons.map(b => ({
+                    x: b.x,
+                    y: b.y,
+                    radius: b.radius,
+                    color: b.color,
+                    speedX: b.speedX,
+                    speedY: b.speedY,
+                    popped: b.popped
+                })),
+                bullets: bullets.map(b => ({
+                    x: b.x,
+                    y: b.y,
+                    angle: b.angle,
+                    knuckleEffect: b.knuckleEffect
+                })),
+                currentProblem: currentProblem,
+                canShoot: canShoot
+            };
+            
+            localStorage.setItem('balloonMathShooter', JSON.stringify(gameState));
+        }
+        
+        // Load game from localStorage
+        function loadGame() {
+            const savedGame = localStorage.getItem('balloonMathShooter');
+            if (savedGame) {
+                const gameState = JSON.parse(savedGame);
+                
+                score = gameState.score;
+                balloonsLeft = gameState.balloonsLeft;
+                shotsFired = gameState.shotsFired;
+                highScore = gameState.highScore;
+                
+                // Recreate balloons
+                balloons = gameState.balloons.map(b => new Balloon(
+                    b.x, b.y, b.radius, b.color, b.speedX, b.speedY, b.popped
+                ));
+                
+                // Recreate bullets
+                bullets = gameState.bullets.map(b => new Bullet(
+                    b.x, b.y, 0, 0, b.angle, b.knuckleEffect
+                ));
+                
+                currentProblem = gameState.currentProblem;
+                canShoot = gameState.canShoot;
+                
+                // Update UI
+                scoreElement.textContent = score;
+                balloonsLeftElement.textContent = balloonsLeft;
+                shotsFiredElement.textContent = shotsFired;
+                highScoreElement.textContent = highScore;
+                
+                if (currentProblem) {
+                    questionElement.textContent = currentProblem.question;
+                }
+                
+                if (canShoot) {
+                    canvas.style.cursor = 'crosshair';
+                    canvas.addEventListener('click', handleCanvasClick);
+                }
+                
+                return true;
+            }
+            return false;
+        }
+        
+        // Initialize game
+        function initGame() {
+            // Try to load saved game
+            const loaded = loadGame();
+            
+            if (!loaded) {
+                // Reset to new game if no saved game
+                score = 0;
+                balloonsLeft = 20;
+                shotsFired = 0;
+                bullets = [];
+                balloons = [];
+                canShoot = false;
+                gameActive = true;
+                
+                scoreElement.textContent = score;
+                balloonsLeftElement.textContent = balloonsLeft;
+                shotsFiredElement.textContent = shotsFired;
+                
+                // Create balloons
+                for (let i = 0; i < 20; i++) {
+                    balloons.push(new Balloon());
+                }
+                
+                // Set first math problem
+                setRandomMathProblem();
+            }
+            
+            // Load high score
+            const savedHighScore = localStorage.getItem('balloonMathHighScore');
+            if (savedHighScore) {
+                highScore = parseInt(savedHighScore);
+                highScoreElement.textContent = highScore;
+            }
+            
+            // Hide game over screen
+            gameOverElement.style.display = 'none';
+            
+            // Start game loop
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Game loop
+        function gameLoop() {
+            if (!gameActive) return;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw sky background
+            ctx.fillStyle = '#87CEEB';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw some clouds
+            drawClouds();
+            
+            // Update and draw balloons
+            balloons.forEach(balloon => {
+                balloon.update();
+                balloon.draw();
+            });
+            
+            // Update and draw bullets
+            bullets.forEach((bullet, index) => {
+                bullet.update();
+                bullet.draw();
+                
+                // Remove inactive bullets
+                if (!bullet.active) {
+                    bullets.splice(index, 1);
+                }
+            });
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Draw clouds in background
+        function drawClouds() {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            
+            // Cloud 1
+            ctx.beginPath();
+            ctx.arc(100, 80, 30, 0, Math.PI * 2);
+            ctx.arc(130, 70, 40, 0, Math.PI * 2);
+            ctx.arc(160, 80, 35, 0, Math.PI * 2);
+            ctx.arc(130, 90, 25, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Cloud 2
+            ctx.beginPath();
+            ctx.arc(400, 120, 35, 0, Math.PI * 2);
+            ctx.arc(430, 110, 45, 0, Math.PI * 2);
+            ctx.arc(460, 120, 40, 0, Math.PI * 2);
+            ctx.arc(430, 130, 30, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Cloud 3
+            ctx.beginPath();
+            ctx.arc(700, 60, 25, 0, Math.PI * 2);
+            ctx.arc(730, 50, 35, 0, Math.PI * 2);
+            ctx.arc(760, 60, 30, 0, Math.PI * 2);
+            ctx.arc(730, 70, 20, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        // Set a random math problem
+        function setRandomMathProblem() {
+            const randomProblem = mathProblems[Math.floor(Math.random() * mathProblems.length)];
+            currentProblem = randomProblem;
+            questionElement.textContent = randomProblem.question;
+            answerInput.value = '';
+            feedbackElement.textContent = '';
+            feedbackElement.className = 'feedback';
+            canShoot = false;
+            submitButton.disabled = false;
+            answerInput.focus();
+            
+            saveGame();
+        }
+        
+        // Check answer and handle shooting
+        function checkAnswer() {
+            if (!gameActive) return;
+            
+            const userAnswer = parseFloat(answerInput.value);
+            
+            if (isNaN(userAnswer)) {
+                feedbackElement.textContent = "Please enter a valid number!";
+                feedbackElement.className = 'feedback incorrect';
+                return;
+            }
+            
+            if (Math.abs(userAnswer - currentProblem.answer) < 0.01) {
+                // Correct answer
+                feedbackElement.textContent = "Correct! You earned a shot!";
+                feedbackElement.className = 'feedback correct';
+                canShoot = true;
+                submitButton.disabled = true;
+                
+                // Enable shooting on canvas
+                canvas.style.cursor = 'crosshair';
+                canvas.addEventListener('click', handleCanvasClick);
+                
+                saveGame();
+            } else {
+                // Incorrect answer
+                feedbackElement.textContent = `Incorrect! The answer was ${currentProblem.answer}. Try another problem.`;
+                feedbackElement.className = 'feedback incorrect';
+                setRandomMathProblem();
+            }
+        }
+        
+        // Handle canvas click for shooting
+        function handleCanvasClick(e) {
+            if (!canShoot || !gameActive) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const targetX = e.clientX - rect.left;
+            const targetY = e.clientY - rect.top;
+            
+            // Create bullet at crosshair position (center of canvas)
+            bullets.push(new Bullet(canvas.width / 2, canvas.height / 2, targetX, targetY));
+            
+            shotsFired++;
+            shotsFiredElement.textContent = shotsFired;
+            
+            // Reset for next math problem
+            canShoot = false;
+            canvas.style.cursor = 'default';
+            canvas.removeEventListener('click', handleCanvasClick);
+            setRandomMathProblem();
+        }
+        
+        // End game
+        function endGame() {
+            gameActive = false;
+            finalScoreElement.textContent = score;
+            gameOverElement.style.display = 'flex';
+            canvas.removeEventListener('click', handleCanvasClick);
+            
+            // Save high score
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('balloonMathHighScore', highScore);
+            }
+            
+            // Clear saved game
+            localStorage.removeItem('balloonMathShooter');
+        }
+        
+        // Start a new game
+        function startNewGame() {
+            // Clear saved game
+            localStorage.removeItem('balloonMathShooter');
+            
+            // Reset game state
+            score = 0;
+            balloonsLeft = 20;
+            shotsFired = 0;
+            bullets = [];
+            balloons = [];
+            canShoot = false;
+            gameActive = true;
+            
+            scoreElement.textContent = score;
+            balloonsLeftElement.textContent = balloonsLeft;
+            shotsFiredElement.textContent = shotsFired;
+            
+            // Create balloons
+            for (let i = 0; i < 20; i++) {
+                balloons.push(new Balloon());
+            }
+            
+            // Set first math problem
+            setRandomMathProblem();
+            
+            // Hide game over screen
+            gameOverElement.style.display = 'none';
+            
+            // Remove any existing click listeners
+            canvas.removeEventListener('click', handleCanvasClick);
+            
+            // Start game loop
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Event listeners
+        submitButton.addEventListener('click', checkAnswer);
+        answerInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                checkAnswer();
+            }
+        });
+        
+        restartButton.addEventListener('click', startNewGame);
+        newGameButton.addEventListener('click', startNewGame);
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        });
+        
+        // Start the game
+        initGame();
+    </script>
+</body>
+</html>
